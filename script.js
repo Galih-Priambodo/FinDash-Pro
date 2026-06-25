@@ -273,11 +273,19 @@ $sidebarOverlay.addEventListener('click', () => {
 // ============ FETCH TRANSACTIONS ============
 async function fetchTransactions() {
     if (!currentUser) return;
-    const { data, error } = await supa
+
+    let query = supa
         .from('transactions')
         .select('*')
-        .eq('user_id', currentUser.id)
         .order('created_at', { ascending: false });
+
+    // Hanya filter user_id jika bukan admin/staff (fallback, sebenarnya sudah diatur oleh RLS)
+    const role = currentUser.user_metadata?.role;
+    if (role !== 'admin' && role !== 'staff') {
+        query = query.eq('user_id', currentUser.id);
+    }
+
+    const { data, error } = await query;
     if (error) {
         console.error('Fetch error:', error);
         showToast('error', 'Gagal mengambil data transaksi.');
